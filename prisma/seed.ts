@@ -1,0 +1,779 @@
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+interface ProductSeed {
+    title: string;
+    description: string;
+    price: number;
+    category: string;
+    retailer: string;
+    url: string;
+    tags: string[];
+}
+
+// Sample product data - diverse categories for testing
+const products: ProductSeed[] = [
+    // Electronics & Tech
+    {
+        title: 'Wireless Noise-Cancelling Headphones',
+        description: 'Premium over-ear headphones with active noise cancellation and 30-hour battery life',
+        price: 249.99,
+        category: 'Electronics',
+        retailer: 'TechHub',
+        url: 'https://example.com/products/headphones-001',
+        tags: ['tech', 'music', 'audio', 'wireless'],
+    },
+    {
+        title: 'Smart Fitness Watch',
+        description: 'Track your health and fitness goals with this sleek smartwatch featuring heart rate monitoring',
+        price: 199.99,
+        category: 'Electronics',
+        retailer: 'FitGear',
+        url: 'https://example.com/products/smartwatch-001',
+        tags: ['tech', 'fitness', 'health', 'sports'],
+    },
+    {
+        title: 'Portable Bluetooth Speaker',
+        description: 'Waterproof speaker with 360-degree sound and 12-hour battery life',
+        price: 79.99,
+        category: 'Electronics',
+        retailer: 'AudioMax',
+        url: 'https://example.com/products/speaker-001',
+        tags: ['tech', 'music', 'outdoor', 'portable'],
+    },
+    {
+        title: 'Gaming Mechanical Keyboard RGB',
+        description: 'Professional gaming keyboard with customizable RGB lighting and mechanical switches',
+        price: 129.99,
+        category: 'Electronics',
+        retailer: 'GamersWorld',
+        url: 'https://example.com/products/keyboard-001',
+        tags: ['tech', 'gaming', 'computer', 'rgb'],
+    },
+    {
+        title: '4K Action Camera',
+        description: 'Capture your adventures in stunning 4K with this waterproof action camera',
+        price: 299.99,
+        category: 'Electronics',
+        retailer: 'PhotoPro',
+        url: 'https://example.com/products/camera-001',
+        tags: ['tech', 'photography', 'outdoor', 'adventure'],
+    },
+
+    // Fashion & Accessories
+    {
+        title: 'Leather Crossbody Bag',
+        description: 'Elegant genuine leather bag perfect for everyday use',
+        price: 89.99,
+        category: 'Fashion',
+        retailer: 'StyleBoutique',
+        url: 'https://example.com/products/bag-001',
+        tags: ['fashion', 'accessories', 'leather', 'elegant'],
+    },
+    {
+        title: 'Designer Sunglasses',
+        description: 'UV-protected polarized sunglasses with classic aviator style',
+        price: 149.99,
+        category: 'Fashion',
+        retailer: 'LuxeEyewear',
+        url: 'https://example.com/products/sunglasses-001',
+        tags: ['fashion', 'accessories', 'outdoor', 'style'],
+    },
+    {
+        title: 'Cashmere Scarf',
+        description: 'Soft and luxurious cashmere scarf in multiple colors',
+        price: 69.99,
+        category: 'Fashion',
+        retailer: 'WarmThreads',
+        url: 'https://example.com/products/scarf-001',
+        tags: ['fashion', 'winter', 'luxury', 'warm'],
+    },
+    {
+        title: 'Minimalist Wallet',
+        description: 'Slim RFID-blocking wallet with sleek design',
+        price: 39.99,
+        category: 'Fashion',
+        retailer: 'ModernAccessories',
+        url: 'https://example.com/products/wallet-001',
+        tags: ['fashion', 'accessories', 'minimalist', 'practical'],
+    },
+    {
+        title: 'Luxury Watch',
+        description: 'Automatic mechanical watch with sapphire crystal and leather strap',
+        price: 449.99,
+        category: 'Fashion',
+        retailer: 'TimeKeepers',
+        url: 'https://example.com/products/watch-001',
+        tags: ['fashion', 'luxury', 'elegant', 'classic'],
+    },
+
+    // Home & Living
+    {
+        title: 'Aromatherapy Diffuser Set',
+        description: 'Essential oil diffuser with LED lights and 7 premium oils included',
+        price: 44.99,
+        category: 'Home',
+        retailer: 'ZenHome',
+        url: 'https://example.com/products/diffuser-001',
+        tags: ['home', 'relaxation', 'wellness', 'aromatherapy'],
+    },
+    {
+        title: 'Premium Coffee Maker',
+        description: 'Programmable espresso machine with milk frother',
+        price: 199.99,
+        category: 'Home',
+        retailer: 'BrewMasters',
+        url: 'https://example.com/products/coffee-001',
+        tags: ['home', 'coffee', 'kitchen', 'appliance'],
+    },
+    {
+        title: 'Weighted Blanket',
+        description: 'Calming 15lb weighted blanket for better sleep',
+        price: 79.99,
+        category: 'Home',
+        retailer: 'SleepWell',
+        url: 'https://example.com/products/blanket-001',
+        tags: ['home', 'sleep', 'relaxation', 'comfort'],
+    },
+    {
+        title: 'Smart LED Light Bulbs 4-Pack',
+        description: 'WiFi-enabled color-changing bulbs controlled via smartphone',
+        price: 49.99,
+        category: 'Home',
+        retailer: 'SmartLiving',
+        url: 'https://example.com/products/lights-001',
+        tags: ['home', 'tech', 'smart', 'lighting'],
+    },
+    {
+        title: 'Decorative Wall Art Set',
+        description: 'Modern abstract canvas prints set of 3',
+        price: 89.99,
+        category: 'Home',
+        retailer: 'ArtGallery',
+        url: 'https://example.com/products/art-001',
+        tags: ['home', 'art', 'decor', 'modern'],
+    },
+
+    // Sports & Fitness
+    {
+        title: 'Yoga Mat Premium',
+        description: 'Extra-thick non-slip yoga mat with carrying strap',
+        price: 39.99,
+        category: 'Sports',
+        retailer: 'FitLife',
+        url: 'https://example.com/products/yoga-001',
+        tags: ['fitness', 'yoga', 'sports', 'wellness'],
+    },
+    {
+        title: 'Adjustable Dumbbell Set',
+        description: '5-52.5 lbs adjustable dumbbells for home gym',
+        price: 299.99,
+        category: 'Sports',
+        retailer: 'GymPro',
+        url: 'https://example.com/products/dumbbells-001',
+        tags: ['fitness', 'strength', 'sports', 'home-gym'],
+    },
+    {
+        title: 'Running Shoes',
+        description: 'Lightweight breathable running shoes with cushioned sole',
+        price: 119.99,
+        category: 'Sports',
+        retailer: 'RunFast',
+        url: 'https://example.com/products/shoes-001',
+        tags: ['sports', 'running', 'fitness', 'footwear'],
+    },
+    {
+        title: 'Resistance Bands Set',
+        description: 'Set of 5 resistance bands with handles and door anchor',
+        price: 29.99,
+        category: 'Sports',
+        retailer: 'FitGear',
+        url: 'https://example.com/products/bands-001',
+        tags: ['fitness', 'strength', 'sports', 'portable'],
+    },
+    {
+        title: 'Camping Backpack 50L',
+        description: 'Durable waterproof hiking backpack with multiple compartments',
+        price: 89.99,
+        category: 'Sports',
+        retailer: 'OutdoorLife',
+        url: 'https://example.com/products/backpack-001',
+        tags: ['outdoor', 'camping', 'hiking', 'adventure'],
+    },
+
+    // Books & Learning
+    {
+        title: 'Bestselling Mystery Novel',
+        description: 'Page-turning thriller by award-winning author',
+        price: 14.99,
+        category: 'Books',
+        retailer: 'BookHaven',
+        url: 'https://example.com/products/book-001',
+        tags: ['books', 'reading', 'mystery', 'fiction'],
+    },
+    {
+        title: 'Cookbook: Healthy Meals',
+        description: '100 delicious and nutritious recipes for the whole family',
+        price: 24.99,
+        category: 'Books',
+        retailer: 'CookBooks',
+        url: 'https://example.com/products/cookbook-001',
+        tags: ['books', 'cooking', 'health', 'food'],
+    },
+    {
+        title: 'Learn to Code Bundle',
+        description: 'Complete programming course with 3 bestselling books',
+        price: 49.99,
+        category: 'Books',
+        retailer: 'TechReads',
+        url: 'https://example.com/products/coding-books-001',
+        tags: ['books', 'learning', 'tech', 'programming'],
+    },
+    {
+        title: 'Art Coloring Book for Adults',
+        description: 'Intricate designs for relaxation and creativity',
+        price: 12.99,
+        category: 'Books',
+        retailer: 'CreativeMinds',
+        url: 'https://example.com/products/coloring-001',
+        tags: ['books', 'art', 'relaxation', 'creativity'],
+    },
+    {
+        title: 'Self-Help: Daily Habits',
+        description: 'Transform your life with proven daily routines',
+        price: 16.99,
+        category: 'Books',
+        retailer: 'InspireReads',
+        url: 'https://example.com/products/selfhelp-001',
+        tags: ['books', 'self-improvement', 'motivation', 'wellness'],
+    },
+
+    // Toys & Games
+    {
+        title: 'Building Blocks Set 1000pcs',
+        description: 'Creative construction set for ages 6+',
+        price: 49.99,
+        category: 'Toys',
+        retailer: 'ToyWorld',
+        url: 'https://example.com/products/blocks-001',
+        tags: ['toys', 'kids', 'building', 'creative'],
+    },
+    {
+        title: 'Strategy Board Game',
+        description: 'Award-winning family board game for 2-4 players',
+        price: 39.99,
+        category: 'Toys',
+        retailer: 'GameNight',
+        url: 'https://example.com/products/boardgame-001',
+        tags: ['games', 'family', 'strategy', 'entertainment'],
+    },
+    {
+        title: 'RC Drone with Camera',
+        description: 'Remote control drone with HD camera and GPS',
+        price: 159.99,
+        category: 'Toys',
+        retailer: 'TechToys',
+        url: 'https://example.com/products/drone-001',
+        tags: ['toys', 'tech', 'outdoor', 'photography'],
+    },
+    {
+        title: 'Puzzle 1000 Pieces',
+        description: 'Beautiful landscape puzzle for relaxation',
+        price: 19.99,
+        category: 'Toys',
+        retailer: 'PuzzleWorld',
+        url: 'https://example.com/products/puzzle-001',
+        tags: ['games', 'puzzles', 'relaxation', 'family'],
+    },
+    {
+        title: 'Educational STEM Kit',
+        description: 'Science experiments and robotics for kids 8-12',
+        price: 69.99,
+        category: 'Toys',
+        retailer: 'SmartKids',
+        url: 'https://example.com/products/stem-001',
+        tags: ['toys', 'education', 'science', 'kids'],
+    },
+
+    // Beauty & Personal Care
+    {
+        title: 'Skincare Gift Set',
+        description: 'Complete 5-step skincare routine with natural ingredients',
+        price: 79.99,
+        category: 'Beauty',
+        retailer: 'GlowBeauty',
+        url: 'https://example.com/products/skincare-001',
+        tags: ['beauty', 'skincare', 'wellness', 'self-care'],
+    },
+    {
+        title: 'Premium Hair Straightener',
+        description: 'Ceramic tourmaline straightener with temperature control',
+        price: 89.99,
+        category: 'Beauty',
+        retailer: 'HairCare',
+        url: 'https://example.com/products/straightener-001',
+        tags: ['beauty', 'hair', 'styling', 'grooming'],
+    },
+    {
+        title: 'Makeup Brush Set 12pcs',
+        description: 'Professional quality brushes with carrying case',
+        price: 44.99,
+        category: 'Beauty',
+        retailer: 'MakeupPro',
+        url: 'https://example.com/products/brushes-001',
+        tags: ['beauty', 'makeup', 'cosmetics', 'professional'],
+    },
+    {
+        title: 'Electric Toothbrush',
+        description: 'Rechargeable sonic toothbrush with 3 cleaning modes',
+        price: 59.99,
+        category: 'Beauty',
+        retailer: 'DentalCare',
+        url: 'https://example.com/products/toothbrush-001',
+        tags: ['beauty', 'health', 'dental', 'grooming'],
+    },
+    {
+        title: 'Perfume Gift Set',
+        description: 'Collection of 5 mini luxury fragrances',
+        price: 69.99,
+        category: 'Beauty',
+        retailer: 'ScentWorld',
+        url: 'https://example.com/products/perfume-001',
+        tags: ['beauty', 'fragrance', 'luxury', 'gift'],
+    },
+
+    // Food & Gourmet
+    {
+        title: 'Gourmet Chocolate Box',
+        description: 'Assorted Belgian chocolates in elegant gift box',
+        price: 34.99,
+        category: 'Food',
+        retailer: 'SweetTreats',
+        url: 'https://example.com/products/chocolate-001',
+        tags: ['food', 'chocolate', 'gift', 'gourmet'],
+    },
+    {
+        title: 'Organic Tea Collection',
+        description: 'Premium loose-leaf tea sampler with 12 varieties',
+        price: 29.99,
+        category: 'Food',
+        retailer: 'TeaTime',
+        url: 'https://example.com/products/tea-001',
+        tags: ['food', 'tea', 'organic', 'wellness'],
+    },
+    {
+        title: 'Artisan Olive Oil Set',
+        description: 'Three bottles of extra virgin olive oil from Italy',
+        price: 49.99,
+        category: 'Food',
+        retailer: 'GourmetMarket',
+        url: 'https://example.com/products/oil-001',
+        tags: ['food', 'gourmet', 'cooking', 'italian'],
+    },
+    {
+        title: 'Hot Sauce Variety Pack',
+        description: '6 premium hot sauces ranging from mild to extreme',
+        price: 24.99,
+        category: 'Food',
+        retailer: 'SpiceHouse',
+        url: 'https://example.com/products/hotsauce-001',
+        tags: ['food', 'spicy', 'cooking', 'gourmet'],
+    },
+    {
+        title: 'Coffee Sampler Gift Box',
+        description: 'World coffee collection with 8 unique blends',
+        price: 39.99,
+        category: 'Food',
+        retailer: 'CoffeeRoasters',
+        url: 'https://example.com/products/coffee-sampler-001',
+        tags: ['food', 'coffee', 'gift', 'gourmet'],
+    },
+
+    // Jewelry
+    {
+        title: 'Sterling Silver Necklace',
+        description: 'Elegant pendant necklace with cubic zirconia',
+        price: 79.99,
+        category: 'Jewelry',
+        retailer: 'Sparkle',
+        url: 'https://example.com/products/necklace-001',
+        tags: ['jewelry', 'fashion', 'elegant', 'silver'],
+    },
+    {
+        title: 'Personalized Bracelet',
+        description: 'Custom engraved bracelet with birthstone',
+        price: 59.99,
+        category: 'Jewelry',
+        retailer: 'CustomJewels',
+        url: 'https://example.com/products/bracelet-001',
+        tags: ['jewelry', 'personalized', 'fashion', 'gift'],
+    },
+    {
+        title: 'Gold Stud Earrings',
+        description: '14K gold classic stud earrings',
+        price: 129.99,
+        category: 'Jewelry',
+        retailer: 'GoldShine',
+        url: 'https://example.com/products/earrings-001',
+        tags: ['jewelry', 'gold', 'elegant', 'classic'],
+    },
+    {
+        title: 'Charm Bracelet Set',
+        description: 'Silver charm bracelet with 5 interchangeable charms',
+        price: 49.99,
+        category: 'Jewelry',
+        retailer: 'CharmWorld',
+        url: 'https://example.com/products/charm-bracelet-001',
+        tags: ['jewelry', 'fashion', 'silver', 'customizable'],
+    },
+    {
+        title: 'Pearl Earrings',
+        description: 'Genuine freshwater pearl drop earrings',
+        price: 89.99,
+        category: 'Jewelry',
+        retailer: 'PearlBoutique',
+        url: 'https://example.com/products/pearl-001',
+        tags: ['jewelry', 'elegant', 'classic', 'luxury'],
+    },
+
+    // Art & Craft
+    {
+        title: 'Watercolor Paint Set Professional',
+        description: '48 vibrant colors with brushes and palette',
+        price: 44.99,
+        category: 'Art',
+        retailer: 'ArtSupplies',
+        url: 'https://example.com/products/watercolor-001',
+        tags: ['art', 'painting', 'creative', 'hobby'],
+    },
+    {
+        title: 'Knitting Starter Kit',
+        description: 'Complete kit with needles, yarn, and instruction book',
+        price: 34.99,
+        category: 'Art',
+        retailer: 'CraftWorld',
+        url: 'https://example.com/products/knitting-001',
+        tags: ['craft', 'knitting', 'hobby', 'creative'],
+    },
+    {
+        title: 'Calligraphy Pen Set',
+        description: 'Professional calligraphy set with 12 nibs and ink',
+        price: 39.99,
+        category: 'Art',
+        retailer: 'WritingArts',
+        url: 'https://example.com/products/calligraphy-001',
+        tags: ['art', 'writing', 'creative', 'hobby'],
+    },
+    {
+        title: 'DIY Candle Making Kit',
+        description: 'Everything needed to make scented candles at home',
+        price: 29.99,
+        category: 'Art',
+        retailer: 'CraftHaven',
+        url: 'https://example.com/products/candle-kit-001',
+        tags: ['craft', 'diy', 'creative', 'home'],
+    },
+    {
+        title: 'Adult Paint by Numbers',
+        description: 'Relaxing paint by numbers kit with premium canvas',
+        price: 24.99,
+        category: 'Art',
+        retailer: 'EasyArt',
+        url: 'https://example.com/products/paint-numbers-001',
+        tags: ['art', 'relaxation', 'hobby', 'creative'],
+    },
+
+    // Music
+    {
+        title: 'Beginner Acoustic Guitar',
+        description: 'Full-size acoustic guitar with gig bag and accessories',
+        price: 149.99,
+        category: 'Music',
+        retailer: 'MusicStore',
+        url: 'https://example.com/products/guitar-001',
+        tags: ['music', 'guitar', 'instrument', 'learning'],
+    },
+    {
+        title: 'Digital Piano Keyboard',
+        description: '61-key keyboard with learning mode and built-in songs',
+        price: 199.99,
+        category: 'Music',
+        retailer: 'PianoWorld',
+        url: 'https://example.com/products/keyboard-piano-001',
+        tags: ['music', 'piano', 'instrument', 'learning'],
+    },
+    {
+        title: 'Ukulele Starter Pack',
+        description: 'Concert ukulele with tuner, case, and songbook',
+        price: 79.99,
+        category: 'Music',
+        retailer: 'UkeShop',
+        url: 'https://example.com/products/ukulele-001',
+        tags: ['music', 'ukulele', 'instrument', 'learning'],
+    },
+    {
+        title: 'Vinyl Record Player',
+        description: 'Vintage-style turntable with Bluetooth connectivity',
+        price: 129.99,
+        category: 'Music',
+        retailer: 'VinylRevival',
+        url: 'https://example.com/products/record-player-001',
+        tags: ['music', 'vintage', 'audio', 'retro'],
+    },
+    {
+        title: 'Studio Monitor Headphones',
+        description: 'Professional monitoring headphones for musicians',
+        price: 179.99,
+        category: 'Music',
+        retailer: 'StudioGear',
+        url: 'https://example.com/products/monitor-headphones-001',
+        tags: ['music', 'audio', 'professional', 'tech'],
+    },
+
+    // Pet Supplies
+    {
+        title: 'Automatic Pet Feeder',
+        description: 'Smart feeder with timer and portion control',
+        price: 89.99,
+        category: 'Pets',
+        retailer: 'PetCare',
+        url: 'https://example.com/products/feeder-001',
+        tags: ['pets', 'tech', 'smart', 'convenience'],
+    },
+    {
+        title: 'Interactive Cat Toy',
+        description: 'Automatic laser toy to keep cats entertained',
+        price: 29.99,
+        category: 'Pets',
+        retailer: 'CatWorld',
+        url: 'https://example.com/products/cat-toy-001',
+        tags: ['pets', 'cats', 'toys', 'entertainment'],
+    },
+    {
+        title: 'Orthopedic Dog Bed',
+        description: 'Memory foam bed for extra comfort and joint support',
+        price: 69.99,
+        category: 'Pets',
+        retailer: 'DogComfort',
+        url: 'https://example.com/products/dog-bed-001',
+        tags: ['pets', 'dogs', 'comfort', 'health'],
+    },
+    {
+        title: 'Pet Grooming Kit',
+        description: 'Complete grooming set with clippers, brushes, and scissors',
+        price: 49.99,
+        category: 'Pets',
+        retailer: 'PetGroomers',
+        url: 'https://example.com/products/grooming-001',
+        tags: ['pets', 'grooming', 'care', 'tools'],
+    },
+    {
+        title: 'GPS Pet Tracker',
+        description: 'Real-time location tracking for dogs and cats',
+        price: 59.99,
+        category: 'Pets',
+        retailer: 'PetTech',
+        url: 'https://example.com/products/tracker-001',
+        tags: ['pets', 'tech', 'safety', 'smart'],
+    },
+
+    // Garden & Outdoor
+    {
+        title: 'Herb Garden Kit Indoor',
+        description: 'Grow fresh herbs year-round with this complete kit',
+        price: 39.99,
+        category: 'Garden',
+        retailer: 'GreenThumb',
+        url: 'https://example.com/products/herb-garden-001',
+        tags: ['garden', 'plants', 'indoor', 'cooking'],
+    },
+    {
+        title: 'Solar Garden Lights 12-Pack',
+        description: 'Decorative pathway lights powered by solar',
+        price: 34.99,
+        category: 'Garden',
+        retailer: 'OutdoorLiving',
+        url: 'https://example.com/products/solar-lights-001',
+        tags: ['garden', 'outdoor', 'lighting', 'solar'],
+    },
+    {
+        title: 'Garden Tool Set',
+        description: '10-piece stainless steel tool set with carrying bag',
+        price: 49.99,
+        category: 'Garden',
+        retailer: 'GardenPro',
+        url: 'https://example.com/products/tools-001',
+        tags: ['garden', 'tools', 'outdoor', 'hobby'],
+    },
+    {
+        title: 'Bird Feeder Decorative',
+        description: 'Beautiful handcrafted bird feeder for backyard',
+        price: 24.99,
+        category: 'Garden',
+        retailer: 'BirdLovers',
+        url: 'https://example.com/products/bird-feeder-001',
+        tags: ['garden', 'outdoor', 'nature', 'decorative'],
+    },
+    {
+        title: 'Hammock with Stand',
+        description: 'Portable hammock with steel frame for ultimate relaxation',
+        price: 119.99,
+        category: 'Garden',
+        retailer: 'RelaxOutdoors',
+        url: 'https://example.com/products/hammock-001',
+        tags: ['outdoor', 'relaxation', 'garden', 'comfort'],
+    },
+
+    // Office & Stationery
+    {
+        title: 'Executive Pen Set',
+        description: 'Luxury fountain and ballpoint pen set in gift box',
+        price: 79.99,
+        category: 'Office',
+        retailer: 'ProfessionalSupply',
+        url: 'https://example.com/products/pen-set-001',
+        tags: ['office', 'writing', 'professional', 'luxury'],
+    },
+    {
+        title: 'Leather Journal Notebook',
+        description: 'Handcrafted leather journal with 200 pages',
+        price: 44.99,
+        category: 'Office',
+        retailer: 'Notebooks',
+        url: 'https://example.com/products/journal-001',
+        tags: ['office', 'writing', 'leather', 'elegant'],
+    },
+    {
+        title: 'Desk Organizer Set',
+        description: 'Bamboo desk organizer with multiple compartments',
+        price: 39.99,
+        category: 'Office',
+        retailer: 'WorkspaceStyle',
+        url: 'https://example.com/products/organizer-001',
+        tags: ['office', 'organization', 'desk', 'bamboo'],
+    },
+    {
+        title: 'Ergonomic Mouse Pad',
+        description: 'Memory foam wrist support mouse pad',
+        price: 19.99,
+        category: 'Office',
+        retailer: 'ComfortWork',
+        url: 'https://example.com/products/mousepad-001',
+        tags: ['office', 'ergonomic', 'comfort', 'tech'],
+    },
+    {
+        title: 'Planner 2026 Deluxe',
+        description: 'Premium planner with monthly and weekly layouts',
+        price: 29.99,
+        category: 'Office',
+        retailer: 'PlannerPro',
+        url: 'https://example.com/products/planner-001',
+        tags: ['office', 'planning', 'organization', 'productivity'],
+    },
+
+    // Birthday-specific items
+    {
+        title: 'Birthday Gift Basket Deluxe',
+        description: 'Gourmet gift basket perfect for birthday celebrations',
+        price: 89.99,
+        category: 'Food',
+        retailer: 'GiftBaskets',
+        url: 'https://example.com/products/birthday-basket-001',
+        tags: ['food', 'gift', 'birthday', 'gourmet'],
+    },
+    {
+        title: 'Birthday Party Decorations Kit',
+        description: 'Complete party decoration set with balloons and banners',
+        price: 34.99,
+        category: 'Party',
+        retailer: 'PartySupply',
+        url: 'https://example.com/products/birthday-decor-001',
+        tags: ['party', 'birthday', 'decorations', 'celebration'],
+    },
+
+    // Romantic/Anniversary items
+    {
+        title: 'Romantic Candle Set',
+        description: 'Set of 3 luxury scented candles perfect for romantic evenings',
+        price: 44.99,
+        category: 'Home',
+        retailer: 'RomanceHome',
+        url: 'https://example.com/products/romantic-candles-001',
+        tags: ['romantic', 'candles', 'home', 'ambiance'],
+    },
+    {
+        title: 'Rose Gold Heart Pendant',
+        description: 'Elegant heart-shaped pendant perfect for anniversaries',
+        price: 99.99,
+        category: 'Jewelry',
+        retailer: 'LoveJewelry',
+        url: 'https://example.com/products/heart-pendant-001',
+        tags: ['jewelry', 'romantic', 'elegant', 'anniversary'],
+    },
+
+    // Kids-specific items
+    {
+        title: 'Kids Science Experiment Kit',
+        description: '50 fun and educational science experiments for ages 6-10',
+        price: 39.99,
+        category: 'Toys',
+        retailer: 'SmartKids',
+        url: 'https://example.com/products/science-kit-kids-001',
+        tags: ['toys', 'kids', 'education', 'science'],
+    },
+    {
+        title: 'Children\'s Art Easel',
+        description: 'Adjustable double-sided easel with storage',
+        price: 59.99,
+        category: 'Toys',
+        retailer: 'KidsCreative',
+        url: 'https://example.com/products/easel-001',
+        tags: ['toys', 'kids', 'art', 'creative'],
+    },
+];
+
+async function main() {
+    console.log('[SEED] Starting seed...');
+
+    let createdCount = 0;
+    let errorCount = 0;
+
+    for (const product of products) {
+        try {
+            await prisma.product.upsert({
+                where: { url: product.url },
+                update: {
+                    title: product.title,
+                    description: product.description,
+                    price: product.price,
+                    category: product.category,
+                    retailer: product.retailer,
+                    tags: product.tags,
+                },
+                create: product,
+            });
+
+            createdCount++;
+        } catch (error) {
+            errorCount++;
+            console.error(`[ERROR] Error seeding product: ${product.title}`, error);
+        }
+    }
+
+    console.log('\n[SEED] Seed completed!');
+    console.log(`   Processed: ${createdCount} products`);
+    if (errorCount > 0) {
+        console.log(`   Errors: ${errorCount} products`);
+    }
+    console.log(`   Total in database: ${await prisma.product.count()}\n`);
+}
+
+main()
+    .catch((e) => {
+        console.error('[ERROR] Seed failed:', e);
+        process.exit(1);
+    })
+    .finally(async () => {
+        await prisma.$disconnect();
+    });

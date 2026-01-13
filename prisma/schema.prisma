@@ -1,0 +1,52 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  price       Float
+  category    String
+  retailer    String
+  url         String   @unique
+  tags        String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  events      Event[]
+
+  @@index([price])
+  @@index([category])
+  @@index([retailer])
+  @@map("products")
+}
+
+enum EventType {
+  VIEW_PRODUCT
+  CLICK_OUT
+  SAVE_PRODUCT
+}
+
+model Event {
+  id          String    @id @default(uuid())
+  userId      String
+  productId   String
+  eventType   EventType
+  timestamp   DateTime  @default(now())
+  
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([productId])
+  @@index([userId, timestamp])
+  @@map("events")
+}
