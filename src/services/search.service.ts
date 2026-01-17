@@ -3,6 +3,7 @@ import {
     productRepository,
     SearchFilters,
     PaginationParams,
+    SortOption,
 } from '../repositories/product.repository';
 
 export interface SearchResult {
@@ -17,15 +18,17 @@ export interface SearchResult {
 
 export class SearchService {
     /**
-     * Search for products with filters and pagination
+     * Search for products with filters, sorting, and pagination
      */
     async search(
         filters: SearchFilters,
-        pagination: PaginationParams
+        pagination: PaginationParams,
+        sort: SortOption = 'relevance'
     ): Promise<SearchResult> {
         const { products, total } = await productRepository.searchProducts(
             filters,
-            pagination
+            pagination,
+            sort
         );
 
         const hasMore = pagination.offset + pagination.limit < total;

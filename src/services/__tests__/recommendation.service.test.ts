@@ -14,6 +14,14 @@ jest.mock('../../repositories/event.repository', () => ({
     },
 }));
 
+// Mock the AI service
+jest.mock('../../services/ai.service', () => ({
+    aiService: {
+        isAIEnabled: jest.fn().mockReturnValue(false),
+        generateBatchExplanations: jest.fn(),
+    },
+}));
+
 import { productRepository } from '../../repositories/product.repository';
 import { eventRepository } from '../../repositories/event.repository';
 
@@ -31,9 +39,11 @@ describe('RecommendationService', () => {
             title: 'Gaming Keyboard',
             description: 'Mechanical keyboard for gamers',
             price: 80,
+            brand: 'GamePro',
             category: 'Electronics',
             retailer: 'TechStore',
             url: 'https://example.com/1',
+            imageUrl: null,
             tags: ['gaming', 'tech', 'computer'],
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -43,9 +53,11 @@ describe('RecommendationService', () => {
             title: 'Coffee Maker',
             description: 'Premium espresso machine',
             price: 150,
+            brand: 'BrewMaster',
             category: 'Home',
             retailer: 'HomeGoods',
             url: 'https://example.com/2',
+            imageUrl: null,
             tags: ['coffee', 'kitchen', 'home'],
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -55,9 +67,11 @@ describe('RecommendationService', () => {
             title: 'Birthday Gift Basket',
             description: 'Perfect for birthday celebrations',
             price: 90,
+            brand: 'GiftLux',
             category: 'Food',
             retailer: 'GiftShop',
             url: 'https://example.com/3',
+            imageUrl: null,
             tags: ['gift', 'birthday', 'food'],
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -83,6 +97,7 @@ describe('RecommendationService', () => {
             expect(result.length).toBeGreaterThan(0);
             expect(result[0]).toHaveProperty('score');
             expect(result[0]).toHaveProperty('scoreBreakdown');
+            expect(result[0]).toHaveProperty('reason');
         });
 
         it('should apply interest matching correctly (+10 per match)', async () => {
@@ -137,6 +152,24 @@ describe('RecommendationService', () => {
             expect(result[0].scoreBreakdown?.occasionMatch).toBe(5);
         });
 
+        it('should apply relationship matching (+5 for category match)', async () => {
+            (productRepository.getRecommendationCandidates as jest.Mock).mockResolvedValue([
+                mockProducts[0], // Electronics - good for friends
+            ]);
+            (eventRepository.getUserTopCategory as jest.Mock).mockResolvedValue(null);
+
+            const params = {
+                userId: 'user-1',
+                budget: 100,
+                interests: [],
+                relationship: 'friend' as const,
+            };
+
+            const result = await service.getRecommendations(params);
+
+            expect(result[0].scoreBreakdown?.relationshipMatch).toBe(5);
+        });
+
         it('should apply learning boost (+15 for top category match)', async () => {
             (productRepository.getRecommendationCandidates as jest.Mock).mockResolvedValue([
                 mockProducts[0],
@@ -187,6 +220,25 @@ describe('RecommendationService', () => {
             const result = await service.getRecommendations(params, 2);
 
             expect(result.length).toBeLessThanOrEqual(2);
+        });
+
+        it('should support recipientAge field', async () => {
+            (productRepository.getRecommendationCandidates as jest.Mock).mockResolvedValue(
+                mockProducts
+            );
+            (eventRepository.getUserTopCategory as jest.Mock).mockResolvedValue(null);
+
+            const params = {
+                userId: 'user-1',
+                budget: 100,
+                interests: ['gaming'],
+                recipientAge: 25,
+            };
+
+            const result = await service.getRecommendations(params);
+
+            expect(result).toBeDefined();
+            expect(result.length).toBeGreaterThan(0);
         });
 
         it('should handle edge case: zero budget', async () => {

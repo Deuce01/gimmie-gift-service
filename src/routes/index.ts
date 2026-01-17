@@ -9,7 +9,7 @@ const router = Router();
 /**
  * Health check endpoint
  */
-router.get('/health', (req, res) => {
+router.get('/health', (_req, res) => {
     res.json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
@@ -19,7 +19,7 @@ router.get('/health', (req, res) => {
 
 /**
  * Search endpoint with caching
- * GET /api/search
+ * GET /api/search?q=&category=&retailer=&brand=&minPrice=&maxPrice=&sort=
  */
 router.get('/search', cacheMiddleware, (req, res, next) =>
     searchController.search(req, res, next)
@@ -31,6 +31,14 @@ router.get('/search', cacheMiddleware, (req, res, next) =>
  */
 router.post('/recommendations', (req, res, next) =>
     recommendationController.getRecommendations(req, res, next)
+);
+
+/**
+ * Recommendation diagnostics endpoint (Learning Layer insight)
+ * GET /api/recommendations/diagnostics?userId=
+ */
+router.get('/recommendations/diagnostics', (req, res, next) =>
+    recommendationController.getDiagnostics(req, res, next)
 );
 
 /**

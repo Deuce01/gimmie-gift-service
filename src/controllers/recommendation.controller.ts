@@ -1,43 +1,78 @@
 import { Request, Response, NextFunction } from 'express';
 import { recommendationService } from '../services/recommendation.service';
+import { learningService } from '../services/learning.service';
 import { recommendationRequestSchema } from '../schemas/recommendation.schema';
-import { ZodError } from 'zod';
+import { z } from 'zod';
+
+const diagnosticsQuerySchema = z.object({
+    userId: z.string().uuid('Invalid user ID format'),
+});
 
 export class RecommendationController {
-    /**
-     * Handle recommendation requests
-     * POST /api/recommendations
-     */
-    async getRecommendations(
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ): Promise<void> {
+    async getRecommendations(req: Request, res: Response, next: NextFunction) {
         try {
             // Validate request body
-            const validatedBody = recommendationRequestSchema.parse(req.body);
+            const validationResult = recommendationRequestSchema.safeParse(req.body);
 
-            // Get recommendations
+            if (!validationResult.success) {
+                res.status(400).json({
+                    success: false,
+                    error: 'Invalid request body',
+                    details: validationResult.error.format(),
+                });
+                return;
+            }
+
+            const params = validationResult.data;
+
+            // Normalize age field (recipientAge takes precedence over age)
+            const normalizedParams = {
+                userId: params.userId,
+                budget: params.budget,
+                interests: params.interests,
+                recipientAge: params.recipientAge ?? params.age,
+                occasion: params.occasion,
+                relationship: params.relationship,
+            };
+
             const recommendations = await recommendationService.getRecommendations(
-                validatedBody,
-                20 // Default limit
+                normalizedParams,
+                10 // Return top 10 as per spec
             );
 
-            // Return response
             res.json({
                 success: true,
                 data: recommendations,
                 count: recommendations.length,
             });
         } catch (error) {
-            if (error instanceof ZodError) {
+            next(error);
+        }
+    }
+
+    async getDiagnostics(req: Request, res: Response, next: NextFunction) {
+        try {
+            // Validate query parameters
+            const validationResult = diagnosticsQuerySchema.safeParse(req.query);
+
+            if (!validationResult.success) {
                 res.status(400).json({
                     success: false,
-                    error: 'Validation error',
-                    details: error.errors,
+                    error: 'Invalid query parameters',
+                    details: validationResult.error.format(),
                 });
                 return;
             }
+
+            const { userId } = validationResult.data;
+
+            const diagnostics = await learningService.getUserDiagnostics(userId);
+
+            res.json({
+                success: true,
+                data: diagnostics,
+            });
+        } catch (error) {
             next(error);
         }
     }

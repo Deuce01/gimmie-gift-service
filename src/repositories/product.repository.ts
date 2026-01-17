@@ -5,6 +5,7 @@ const prisma = new PrismaClient();
 export interface SearchFilters {
     category?: string;
     retailer?: string;
+    brand?: string;
     minPrice?: number;
     maxPrice?: number;
     searchTerm?: string;
@@ -15,13 +16,16 @@ export interface PaginationParams {
     offset: number;
 }
 
+export type SortOption = 'price_asc' | 'price_desc' | 'relevance';
+
 export class ProductRepository {
     /**
-     * Search products with filters and pagination
+     * Search products with filters, sorting, and pagination
      */
     async searchProducts(
         filters: SearchFilters,
-        pagination: PaginationParams
+        pagination: PaginationParams,
+        sort: SortOption = 'relevance'
     ): Promise<{ products: Product[]; total: number }> {
         const where: Prisma.ProductWhereInput = {};
 
@@ -35,6 +39,11 @@ export class ProductRepository {
             where.retailer = { equals: filters.retailer, mode: 'insensitive' };
         }
 
+        // Apply brand filter  
+        if (filters.brand) {
+            where.brand = { equals: filters.brand, mode: 'insensitive' };
+        }
+
         // Apply price range filters
         if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
             where.price = {};
@@ -46,12 +55,31 @@ export class ProductRepository {
             }
         }
 
-        // Apply text search (searches in title and description)
+        // Apply text search (searches in title, description, AND tags)
         if (filters.searchTerm) {
             where.OR = [
                 { title: { contains: filters.searchTerm, mode: 'insensitive' } },
                 { description: { contains: filters.searchTerm, mode: 'insensitive' } },
+                { tags: { has: filters.searchTerm.toLowerCase() } },
             ];
+        }
+
+        // Determine sort order
+        let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
+
+        switch (sort) {
+            case 'price_asc':
+                orderBy = { price: 'asc' };
+                break;
+            case 'price_desc':
+                orderBy = { price: 'desc' };
+                break;
+            case 'relevance':
+            default:
+                // For relevance, we order by createdAt as a simple proxy
+                // In a production app, you might use full-text search scoring
+                orderBy = { createdAt: 'desc' };
+                break;
         }
 
         // Execute query with pagination
@@ -60,7 +88,7 @@ export class ProductRepository {
                 where,
                 take: pagination.limit,
                 skip: pagination.offset,
-                orderBy: { createdAt: 'desc' },
+                orderBy,
             }),
             prisma.product.count({ where }),
         ]);

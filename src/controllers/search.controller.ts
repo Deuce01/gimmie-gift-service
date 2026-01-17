@@ -1,50 +1,53 @@
 import { Request, Response, NextFunction } from 'express';
 import { searchService } from '../services/search.service';
 import { searchQuerySchema } from '../schemas/search.schema';
-import { ZodError } from 'zod';
+import { SortOption } from '../repositories/product.repository';
 
 export class SearchController {
-    /**
-     * Handle search requests
-     * GET /api/search
-     */
-    async search(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async search(req: Request, res: Response, next: NextFunction) {
         try {
             // Validate and parse query parameters
-            const validatedQuery = searchQuerySchema.parse(req.query);
+            const validationResult = searchQuerySchema.safeParse(req.query);
 
-            // Extract filters and pagination
+            if (!validationResult.success) {
+                res.status(400).json({
+                    success: false,
+                    error: 'Invalid query parameters',
+                    details: validationResult.error.format(),
+                });
+                return;
+            }
+
+            const query = validationResult.data;
+
+            // Support both 'q' (spec) and 'searchTerm' (legacy)
+            const searchTerm = query.q || query.searchTerm;
+
+            // Build filters
             const filters = {
-                category: validatedQuery.category,
-                retailer: validatedQuery.retailer,
-                minPrice: validatedQuery.minPrice,
-                maxPrice: validatedQuery.maxPrice,
-                searchTerm: validatedQuery.searchTerm,
+                category: query.category,
+                retailer: query.retailer,
+                brand: query.brand,
+                minPrice: query.minPrice,
+                maxPrice: query.maxPrice,
+                searchTerm,
             };
 
             const pagination = {
-                limit: validatedQuery.limit,
-                offset: validatedQuery.offset,
+                limit: query.limit,
+                offset: query.offset,
             };
 
-            // Execute search
-            const result = await searchService.search(filters, pagination);
+            const sort = query.sort as SortOption;
 
-            // Return response
+            const result = await searchService.search(filters, pagination, sort);
+
             res.json({
                 success: true,
                 data: result.products,
                 pagination: result.pagination,
             });
         } catch (error) {
-            if (error instanceof ZodError) {
-                res.status(400).json({
-                    success: false,
-                    error: 'Validation error',
-                    details: error.errors,
-                });
-                return;
-            }
             next(error);
         }
     }

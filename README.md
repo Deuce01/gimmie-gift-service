@@ -5,18 +5,18 @@
 ## 📋 Overview
 
 Gimmie Gift Service is a sophisticated backend API that solves the "Gift Discovery" problem. It allows users to:
-- **Search** for products with advanced filters
-- **Get personalized recommendations** based on recipient profiles (age, budget, interests, occasion)
+- **Search** for products with advanced filters and sorting
+- **Get personalized recommendations** based on recipient profiles (age, budget, interests, occasion, relationship)
 - **Track user interactions** to continuously improve recommendations through a learning layer
 
 ### ✨ Key Features
 
-- 🎯 **Intelligent Scoring Algorithm**: Weighted heuristic system combining interest matching, budget optimization, and occasion keywords
+- 🎯 **Intelligent Scoring Algorithm**: Weighted heuristic system combining interest matching, budget optimization, occasion/relationship keywords
 - 📊 **Learning Layer**: User interactions (views, clicks, saves) feed back into the ranking algorithm
 - 🤖 **AI-Powered Explanations**: Optional OpenAI integration generates personalized "Why this gift?" explanations
 - ⚡ **Performance Optimized**: In-memory caching and strategic database indexes for sub-200ms search responses
 - 🛡️ **Enterprise-Ready**: Rate limiting, input validation, error handling, and comprehensive testing
-- 🔍 **Advanced Search**: Case-insensitive text search with multiple filters and pagination
+- 🔍 **Advanced Search**: Case-insensitive text search with multiple filters, sorting, and pagination
 
 ## 🏗️ Architecture
 
@@ -102,17 +102,21 @@ GET /api/health
 
 ### Search Products
 ```http
-GET /api/search?category=Electronics&minPrice=50&maxPrice=200&limit=20&offset=0
+GET /api/search?q=gaming&category=Electronics&brand=GamePro&minPrice=50&maxPrice=200&sort=price_asc&limit=20&offset=0
 ```
 
 **Query Parameters:**
-- `category` (optional): Filter by product category
-- `retailer` (optional): Filter by retailer name
-- `minPrice` (optional): Minimum price filter
-- `maxPrice` (optional): Maximum price filter
-- `searchTerm` (optional): Text search in title/description
-- `limit` (optional, default: 20, max: 100): Results per page
-- `offset` (optional, default: 0): Pagination offset
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `q` | string | Text search in title/description/tags |
+| `category` | string | Filter by product category |
+| `retailer` | string | Filter by retailer name |
+| `brand` | string | Filter by brand name |
+| `minPrice` | number | Minimum price filter |
+| `maxPrice` | number | Maximum price filter |
+| `sort` | string | Sort order: `price_asc`, `price_desc`, `relevance` |
+| `limit` | number | Results per page (default: 20, max: 100) |
+| `offset` | number | Pagination offset (default: 0) |
 
 **Response:**
 ```json
@@ -137,10 +141,21 @@ Content-Type: application/json
   "userId": "550e8400-e29b-41d4-a716-446655440000",
   "budget": 100,
   "interests": ["tech", "gaming"],
-  "age": 25,
+  "recipientAge": 25,
+  "relationship": "friend",
   "occasion": "birthday"
 }
 ```
+
+**Request Body Parameters:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `userId` | string (UUID) | Yes | User identifier |
+| `budget` | number | Yes | Maximum budget |
+| `interests` | string[] | Yes | Array of interests/hobbies |
+| `recipientAge` | number | No | Age of the gift recipient |
+| `relationship` | string | No | `friend`, `partner`, `parent`, `sibling`, `colleague`, `child`, `other` |
+| `occasion` | string | No | `birthday`, `anniversary`, `wedding`, `graduation`, `christmas`, etc. |
 
 **Response:**
 ```json
@@ -151,14 +166,17 @@ Content-Type: application/json
       "id": "...",
       "title": "Gaming Keyboard RGB",
       "price": 89.99,
+      "brand": "GamePro",
       "score": 35,
       "scoreBreakdown": {
         "interestMatch": 20,
         "budgetOptimization": 5,
         "occasionMatch": 0,
+        "relationshipMatch": 5,
         "learningBoost": 15
       },
-      "aiExplanation": "This gaming keyboard is perfect for your tech-savvy friend! With RGB lighting and mechanical switches, it matches their gaming interests perfectly and fits comfortably within budget."
+      "reason": "Gaming Keyboard RGB is recommended because it matches interests: gaming, tech, great value within budget.",
+      "aiExplanation": "This gaming keyboard is perfect for your tech-savvy friend!..."
     }
   ],
   "count": 10
@@ -167,6 +185,30 @@ Content-Type: application/json
 
 > [!TIP]
 > **AI-Powered Explanations**: Set `OPENAI_API_KEY` in your `.env` file to enable AI-generated gift explanations. See [AI Integration Guide](docs/AI_INTEGRATION.md) for details.
+
+### Get Recommendation Diagnostics
+```http
+GET /api/recommendations/diagnostics?userId=550e8400-e29b-41d4-a716-446655440000
+```
+
+Returns insight into how the learning layer affects a user's recommendations.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "userId": "550e8400-e29b-41d4-a716-446655440000",
+    "topCategories": [
+      { "category": "Electronics", "interactionCount": 15 },
+      { "category": "Books", "interactionCount": 8 }
+    ],
+    "topBoostedTags": ["tech", "gaming", "music"],
+    "rankingExplanation": "Products in 'Electronics' category receive a +15 point boost...",
+    "totalEvents": 23
+  }
+}
+```
 
 ### Track User Events
 ```http
@@ -199,28 +241,21 @@ The recommendation engine uses a sophisticated **Weighted Heuristic Scoring Syst
 | **Interest Match** | +10 per tag overlap | Product tags match user interests |
 | **Budget Optimization** | +5 | Price is 80-100% of budget (maximizes value) |
 | **Occasion Match** | +5 | Title/description contains occasion keywords |
+| **Relationship Match** | +5 | Product category matches typical gifts for relationship type |
 | **Learning Boost** | +15 | Product category matches user's top interacted category |
 
-**Example:**
-```
-Product: "Gaming Keyboard RGB" ($90)
-User: budget=$100, interests=["gaming", "tech"]
-
-Calculation:
-- Interest Match: "gaming" + "tech" = 2 matches × 10 = +20
-- Budget Optimization: $90 = 90% of budget = +5
-- Occasion Match: No birthday keywords = +0
-- Learning Boost: User's top category is "Electronics" = +15
-
-Total Score: 40 points
-```
+**Relevance Explanation**:
+For search results sorted by "relevance", products are ordered by creation date (newest first). In a production system, this could be enhanced with:
+- Full-text search scoring (PostgreSQL `ts_rank`)
+- Popularity metrics (view counts, purchase data)
+- User personalization based on event history
 
 ## 🔧 Development
 
 ### Running Tests
 
 ```bash
-# Unit tests
+# Unit tests with coverage
 npm test
 
 # Watch mode
@@ -228,9 +263,6 @@ npm run test:watch
 
 # Integration tests
 npm run test:integration
-
-# Coverage report
-npm test -- --coverage
 ```
 
 ### Database Management
@@ -249,34 +281,30 @@ npm run prisma:studio
 npm run seed
 ```
 
-### Linting & Formatting
-
-```bash
-# Lint code
-npm run lint
-
-# Format code
-npm run format
-```
-
 ## 📊 Data Schema
 
 ### Product Model
-- `id`: UUID (Primary Key)
-- `title`: String (searchable)
-- `description`: String (searchable)
-- `price`: Float (indexed for range filtering)
-- `category`: String (indexed for filtering)
-- `retailer`: String (indexed)
-- `url`: String (unique constraint for idempotent seeding)
-- `tags`: String[] (array for flexible interest matching)
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | Primary Key |
+| `title` | String | Searchable product title |
+| `description` | String | Searchable product description |
+| `price` | Float | Indexed for range filtering |
+| `brand` | String | Indexed for filtering |
+| `category` | String | Indexed for filtering |
+| `retailer` | String | Indexed for filtering |
+| `url` | String | Unique constraint for idempotent seeding |
+| `imageUrl` | String | Optional product image |
+| `tags` | String[] | Array for flexible interest matching |
 
 ### Event Model
-- `id`: UUID (Primary Key)
-- `userId`: String (UUID, indexed)
-- `productId`: String (UUID, Foreign Key, indexed)
-- `eventType`: Enum (VIEW_PRODUCT, CLICK_OUT, SAVE_PRODUCT)
-- `timestamp`: DateTime (indexed with userId)
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | UUID | Primary Key |
+| `userId` | String | UUID, indexed |
+| `productId` | String | Foreign Key, indexed |
+| `eventType` | Enum | VIEW_PRODUCT, CLICK_OUT, SAVE_PRODUCT |
+| `timestamp` | DateTime | Indexed with userId |
 
 ## 🚦 Performance Features
 
@@ -284,17 +312,15 @@ npm run format
 - **Strategy**: In-memory caching with node-cache
 - **TTL**: 5 minutes (configurable)
 - **Scope**: Search endpoint only (GET requests)
-- **Key Generation**: Based on full query string
 - **Impact**: Sub-200ms response time on cache hits
 
 ### Database Optimization
-- **Indexes**: Strategic indexes on `price`, `category`, `retailer`, `userId`
+- **Indexes**: Strategic indexes on `price`, `category`, `retailer`, `brand`, `userId`
 - **Pagination**: Default 20 items/page, max 100
 - **Query Limits**: Recommendation candidates capped at 100 for fast scoring
 
 ### Rate Limiting
 - **Limit**: 100 requests per 15 minutes per IP
-- **Response**: 429 Too Many Requests when exceeded
 - **Configurable**: Via environment variables
 
 ## 🔒 Security Features
@@ -307,8 +333,6 @@ npm run format
 
 ## 🐳 Docker Support
 
-The project includes Docker Compose configuration for PostgreSQL:
-
 ```bash
 # Start database
 docker-compose up -d
@@ -316,22 +340,30 @@ docker-compose up -d
 # Stop database
 docker-compose down
 
-# View logs
-docker-compose logs -f
-
 # Reset database
-docker-compose down -v
-docker-compose up -d
+docker-compose down -v && docker-compose up -d
 ```
 
-## 📈 Future Enhancements
+## 📈 What I'd Improve Next (Given More Time)
 
-- [ ] Vector search with product embeddings for semantic matching
-- [ ] OpenAI integration for "Why this gift?" explanations
-- [ ] User authentication and profile management
-- [ ] Product image storage and serving
-- [ ] Real-time analytics dashboard
-- [ ] Collaborative filtering for "Users who liked this also liked..."
+### Technical Enhancements
+1. **Full-text Search**: Implement PostgreSQL `tsvector` and `ts_rank` for proper relevance scoring
+2. **Vector Embeddings**: Use OpenAI embeddings for semantic product matching ("find gifts similar to...")
+3. **Redis Caching**: Replace in-memory cache with Redis for distributed deployments
+4. **GraphQL API**: Add GraphQL endpoint for flexible client queries
+
+### Product Features
+1. **User Authentication**: JWT-based auth with user profiles and preferences
+2. **Collaborative Filtering**: "Users who liked this also liked..." recommendations
+3. **Product Images**: Image storage and optimization with CDN delivery
+4. **Price Tracking**: Historical price data for "best time to buy" insights
+5. **Wishlist/Registry**: Save and share gift wishlists
+
+### Operational
+1. **Monitoring**: Add Prometheus metrics and Grafana dashboards
+2. **CI/CD**: GitHub Actions for automated testing and deployment
+3. **API Versioning**: Implement `/v1/` API versioning strategy
+4. **Rate Limit Tiers**: Different limits for authenticated vs. anonymous users
 
 ## 🛠️ Technology Stack
 

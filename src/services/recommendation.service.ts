@@ -7,8 +7,10 @@ export interface RecommendationParams {
     userId: string;
     budget: number;
     interests: string[];
-    age?: number;
+    recipientAge?: number;
+    age?: number; // Legacy support
     occasion?: string;
+    relationship?: 'friend' | 'partner' | 'parent' | 'sibling' | 'colleague' | 'child' | 'other';
 }
 
 export interface ScoredProduct extends Product {
@@ -17,9 +19,11 @@ export interface ScoredProduct extends Product {
         interestMatch: number;
         budgetOptimization: number;
         occasionMatch: number;
+        relationshipMatch: number;
         learningBoost: number;
     };
     aiExplanation?: string | null;
+    reason?: string;
 }
 
 export class RecommendationService {
@@ -28,8 +32,12 @@ export class RecommendationService {
      */
     async getRecommendations(
         params: RecommendationParams,
-        limit: number = 20
+        limit: number = 10
     ): Promise<ScoredProduct[]> {
+        // Normalize age field (recipientAge takes precedence)
+        const age = params.recipientAge ?? params.age;
+        const normalizedParams = { ...params, recipientAge: age };
+
         // Step 1: Hard Filter - Get candidates within budget (with 15% buffer)
         const maxPrice = params.budget * 1.15;
         const candidates = await productRepository.getRecommendationCandidates(
@@ -50,19 +58,24 @@ export class RecommendationService {
         const scoredProducts: ScoredProduct[] = candidates.map((product) => {
             const breakdown = this.calculateScore(
                 product,
-                params,
+                normalizedParams,
                 userTopCategory?.category
             );
             const totalScore =
                 breakdown.interestMatch +
                 breakdown.budgetOptimization +
                 breakdown.occasionMatch +
+                breakdown.relationshipMatch +
                 breakdown.learningBoost;
+
+            // Generate a simple reason text
+            const reason = this.generateReason(product, normalizedParams, breakdown);
 
             return {
                 ...product,
                 score: totalScore,
                 scoreBreakdown: breakdown,
+                reason,
             };
         });
 
@@ -77,7 +90,7 @@ export class RecommendationService {
                 // Generate explanations for top 5 products to save API costs
                 const productsForAI = topRecommendations.slice(0, 5).map((sp) => ({
                     product: sp,
-                    params,
+                    params: normalizedParams,
                     score: sp.score,
                     scoreBreakdown: sp.scoreBreakdown!,
                 }));
@@ -98,6 +111,57 @@ export class RecommendationService {
     }
 
     /**
+     * Generate a human-readable reason for why this product was recommended
+     */
+    private generateReason(
+        product: Product,
+        params: RecommendationParams,
+        breakdown: {
+            interestMatch: number;
+            budgetOptimization: number;
+            occasionMatch: number;
+            relationshipMatch: number;
+            learningBoost: number;
+        }
+    ): string {
+        const reasons: string[] = [];
+
+        if (breakdown.interestMatch > 0) {
+            const matchedInterests = params.interests.filter(interest =>
+                product.tags.some(tag =>
+                    tag.toLowerCase().includes(interest.toLowerCase()) ||
+                    interest.toLowerCase().includes(tag.toLowerCase())
+                )
+            );
+            if (matchedInterests.length > 0) {
+                reasons.push(`matches interests: ${matchedInterests.join(', ')}`);
+            }
+        }
+
+        if (breakdown.budgetOptimization > 0) {
+            reasons.push('great value within budget');
+        }
+
+        if (breakdown.occasionMatch > 0 && params.occasion) {
+            reasons.push(`perfect for ${params.occasion}`);
+        }
+
+        if (breakdown.relationshipMatch > 0 && params.relationship) {
+            reasons.push(`ideal gift for a ${params.relationship}`);
+        }
+
+        if (breakdown.learningBoost > 0) {
+            reasons.push('based on your previous preferences');
+        }
+
+        if (reasons.length === 0) {
+            return `${product.title} is a popular choice in the ${product.category} category.`;
+        }
+
+        return `${product.title} is recommended because it ${reasons.join(', ')}.`;
+    }
+
+    /**
      * Calculate score for a single product based on the weighted heuristic algorithm
      */
     private calculateScore(
@@ -108,11 +172,13 @@ export class RecommendationService {
         interestMatch: number;
         budgetOptimization: number;
         occasionMatch: number;
+        relationshipMatch: number;
         learningBoost: number;
     } {
         let interestMatch = 0;
         let budgetOptimization = 0;
         let occasionMatch = 0;
+        let relationshipMatch = 0;
         let learningBoost = 0;
 
         // Interest Matching: +10 points per tag overlap
@@ -149,6 +215,14 @@ export class RecommendationService {
             }
         }
 
+        // Relationship Matching: +5 points based on relationship type
+        if (params.relationship) {
+            const relationshipCategories = this.getRelationshipCategories(params.relationship);
+            if (relationshipCategories.includes(product.category)) {
+                relationshipMatch = 5;
+            }
+        }
+
         // Learning Layer Boost: +15 points if product category matches user's top category
         if (userTopCategory && product.category === userTopCategory) {
             learningBoost = 15;
@@ -158,8 +232,26 @@ export class RecommendationService {
             interestMatch,
             budgetOptimization,
             occasionMatch,
+            relationshipMatch,
             learningBoost,
         };
+    }
+
+    /**
+     * Get categories typically associated with different relationship types
+     */
+    private getRelationshipCategories(relationship: string): string[] {
+        const relationshipMap: Record<string, string[]> = {
+            friend: ['Electronics', 'Toys', 'Books', 'Food', 'Sports'],
+            partner: ['Jewelry', 'Beauty', 'Home', 'Fashion', 'Food'],
+            parent: ['Home', 'Garden', 'Books', 'Food', 'Beauty'],
+            sibling: ['Electronics', 'Toys', 'Fashion', 'Books', 'Sports'],
+            colleague: ['Office', 'Food', 'Books', 'Home'],
+            child: ['Toys', 'Books', 'Electronics', 'Art', 'Sports'],
+            other: [],
+        };
+
+        return relationshipMap[relationship] || [];
     }
 
     /**

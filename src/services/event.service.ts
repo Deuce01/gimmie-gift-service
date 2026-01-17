@@ -1,4 +1,4 @@
-import { EventType } from '@prisma/client';
+// Event service is a thin wrapper around the event repository
 import {
     eventRepository,
     CreateEventData,

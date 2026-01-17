@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gimmie Gift Service - Gift Discovery Dashboard</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #f97316;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --success: #22c55e;
+            --border: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 16px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 1rem;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: 2px solid var(--border);
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            border-color: var(--primary);
+            color: var(--text);
+        }
+
+        .tab.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .panel {
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        .search-form,
+        .rec-form {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        input,
+        select {
+            padding: 0.75rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        input::placeholder {
+            color: var(--text-muted);
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: var(--primary-dark);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .results-count {
+            color: var(--text-muted);
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .product-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            transition: transform 0.2s, border-color 0.2s;
+            cursor: pointer;
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+        }
+
+        .product-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .product-brand {
+            font-size: 0.875rem;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .product-description {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .product-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .product-price {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--success);
+        }
+
+        .product-category {
+            font-size: 0.75rem;
+            background: var(--border);
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+        }
+
+        .product-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .tag {
+            font-size: 0.75rem;
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--primary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .score-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--secondary);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.875rem;
+        }
+
+        .recommendation-card {
+            position: relative;
+        }
+
+        .recommendation-reason {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--success);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .diagnostics-panel {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .diagnostics-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .diagnostics-section h4 {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+        }
+
+        .category-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .category-badge {
+            background: var(--primary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+        }
+
+        .category-badge span {
+            opacity: 0.7;
+            margin-left: 0.5rem;
+        }
+
+        pre {
+            background: var(--bg-dark);
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Gimmie Gift Service</h1>
+            <p>Discover the perfect gift with intelligent recommendations</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" data-panel="search">Search Products</button>
+            <button class="tab" data-panel="recommendations">Best Picks</button>
+            <button class="tab" data-panel="diagnostics">Learning Insights</button>
+        </div>
+
+        <!-- Search Panel -->
+        <div id="search" class="panel active">
+            <form class="search-form" id="searchForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="q">Search</label>
+                        <input type="text" id="q" name="q" placeholder="e.g., gaming keyboard">
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <select id="category" name="category">
+                            <option value="">All Categories</option>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Fashion">Fashion</option>
+                            <option value="Home">Home</option>
+                            <option value="Sports">Sports</option>
+                            <option value="Books">Books</option>
+                            <option value="Toys">Toys</option>
+                            <option value="Beauty">Beauty</option>
+                            <option value="Food">Food</option>
+                            <option value="Jewelry">Jewelry</option>
+                            <option value="Art">Art</option>
+                            <option value="Music">Music</option>
+                            <option value="Pets">Pets</option>
+                            <option value="Garden">Garden</option>
+                            <option value="Office">Office</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="minPrice">Min Price</label>
+                        <input type="number" id="minPrice" name="minPrice" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="maxPrice">Max Price</label>
+                        <input type="number" id="maxPrice" name="maxPrice" placeholder="500">
+                    </div>
+                    <div class="form-group">
+                        <label for="sort">Sort By</label>
+                        <select id="sort" name="sort">
+                            <option value="relevance">Relevance</option>
+                            <option value="price_asc">Price: Low to High</option>
+                            <option value="price_desc">Price: High to Low</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit">Search Products</button>
+            </form>
+
+            <div class="results-header">
+                <h2>Products</h2>
+                <span class="results-count" id="searchCount">0 results</span>
+            </div>
+            <div id="searchResults" class="products-grid">
+                <div class="empty-state">
+                    <p>Search for products to see results</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations Panel -->
+        <div id="recommendations" class="panel">
+            <form class="rec-form" id="recForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="budget">Budget ($)</label>
+                        <input type="number" id="budget" name="budget" placeholder="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="interests">Interests (comma-separated)</label>
+                        <input type="text" id="interests" name="interests" placeholder="tech, gaming, music" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="recipientAge">Recipient Age</label>
+                        <input type="number" id="recipientAge" name="recipientAge" placeholder="25">
+                    </div>
+                    <div class="form-group">
+                        <label for="relationship">Relationship</label>
+                        <select id="relationship" name="relationship">
+                            <option value="">Select...</option>
+                            <option value="friend">Friend</option>
+                            <option value="partner">Partner</option>
+                            <option value="parent">Parent</option>
+                            <option value="sibling">Sibling</option>
+                            <option value="colleague">Colleague</option>
+                            <option value="child">Child</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="occasion">Occasion</label>
+                        <select id="occasion" name="occasion">
+                            <option value="">Select...</option>
+                            <option value="birthday">Birthday</option>
+                            <option value="christmas">Christmas</option>
+                            <option value="anniversary">Anniversary</option>
+                            <option value="wedding">Wedding</option>
+                            <option value="graduation">Graduation</option>
+                            <option value="valentines">Valentine's Day</option>
+                            <option value="housewarming">Housewarming</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit">Get Best Picks</button>
+            </form>
+
+            <div class="results-header">
+                <h2>Best Picks for You</h2>
+                <span class="results-count" id="recCount">0 recommendations</span>
+            </div>
+            <div id="recResults" class="products-grid">
+                <div class="empty-state">
+                    <p>Fill in the form above to get personalized recommendations</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Diagnostics Panel -->
+        <div id="diagnostics" class="panel">
+            <form class="search-form" id="diagForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="diagUserId">User ID</label>
+                        <input type="text" id="diagUserId" name="userId"
+                            placeholder="550e8400-e29b-41d4-a716-446655440000">
+                    </div>
+                </div>
+                <button type="submit">View Learning Insights</button>
+            </form>
+
+            <div id="diagResults" class="diagnostics-panel" style="display: none;">
+                <div class="diagnostics-section">
+                    <h4>Top Categories</h4>
+                    <div id="topCategories" class="category-list"></div>
+                </div>
+                <div class="diagnostics-section">
+                    <h4>Boosted Tags</h4>
+                    <div id="topTags" class="product-tags"></div>
+                </div>
+                <div class="diagnostics-section">
+                    <h4>Ranking Explanation</h4>
+                    <pre id="rankingExplanation"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Event tracked!</div>
+
+    <script>
+        const API_BASE = '/api';
+        const USER_ID = '550e8400-e29b-41d4-a716-446655440000';
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.panel).classList.add('active');
+            });
+        });
+
+        // Show toast notification
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // Track event
+        async function trackEvent(productId, eventType) {
+            try {
+                await fetch(`${API_BASE}/events`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: USER_ID,
+                        productId,
+                        eventType
+                    })
+                });
+                showToast(`Event tracked: ${eventType}`);
+            } catch (err) {
+                console.error('Failed to track event:', err);
+            }
+        }
+
+        // Render product card
+        function renderProductCard(product, showScore = false) {
+            const card = document.createElement('div');
+            card.className = `product-card ${showScore ? 'recommendation-card' : ''}`;
+
+            card.innerHTML = `
+                ${showScore ? `<div class="score-badge">Score: ${product.score}</div>` : ''}
+                <h3>${product.title}</h3>
+                <div class="product-brand">${product.brand}</div>
+                <p class="product-description">${product.description}</p>
+                <div class="product-meta">
+                    <span class="product-price">$${product.price.toFixed(2)}</span>
+                    <span class="product-category">${product.category}</span>
+                </div>
+                <div class="product-tags">
+                    ${product.tags.slice(0, 4).map(tag => `<span class="tag">${tag}</span>`).join('')}
+                </div>
+                ${product.reason ? `<div class="recommendation-reason">"${product.reason}"</div>` : ''}
+            `;
+
+            // Track view on render
+            trackEvent(product.id, 'VIEW_PRODUCT');
+
+            // Track click on card click
+            card.addEventListener('click', () => {
+                trackEvent(product.id, 'CLICK_OUT');
+                if (product.url) {
+                    window.open(product.url, '_blank');
+                }
+            });
+
+            return card;
+        }
+
+        // Search form submit
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const params = new URLSearchParams();
+
+            for (let [key, value] of formData.entries()) {
+                if (value) params.append(key, value);
+            }
+
+            const resultsDiv = document.getElementById('searchResults');
+            resultsDiv.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Searching...</p></div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/search?${params}`);
+                const data = await response.json();
+
+                if (data.success && data.data.length > 0) {
+                    resultsDiv.innerHTML = '';
+                    data.data.forEach(product => {
+                        resultsDiv.appendChild(renderProductCard(product));
+                    });
+                    document.getElementById('searchCount').textContent = `${data.pagination.total} results`;
+                } else {
+                    resultsDiv.innerHTML = '<div class="empty-state"><p>No products found. Try different filters.</p></div>';
+                    document.getElementById('searchCount').textContent = '0 results';
+                }
+            } catch (err) {
+                resultsDiv.innerHTML = '<div class="empty-state"><p>Error loading products. Is the server running?</p></div>';
+                console.error(err);
+            }
+        });
+
+        // Recommendations form submit
+        document.getElementById('recForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            const interests = formData.get('interests').split(',').map(i => i.trim()).filter(i => i);
+
+            const body = {
+                userId: USER_ID,
+                budget: parseFloat(formData.get('budget')) || 100,
+                interests,
+                recipientAge: parseInt(formData.get('recipientAge')) || undefined,
+                relationship: formData.get('relationship') || undefined,
+                occasion: formData.get('occasion') || undefined
+            };
+
+            const resultsDiv = document.getElementById('recResults');
+            resultsDiv.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Finding best picks...</p></div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/recommendations`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+
+                if (data.success && data.data.length > 0) {
+                    resultsDiv.innerHTML = '';
+                    data.data.forEach(product => {
+                        resultsDiv.appendChild(renderProductCard(product, true));
+                    });
+                    document.getElementById('recCount').textContent = `${data.count} recommendations`;
+                } else {
+                    resultsDiv.innerHTML = '<div class="empty-state"><p>No recommendations found for this criteria.</p></div>';
+                    document.getElementById('recCount').textContent = '0 recommendations';
+                }
+            } catch (err) {
+                resultsDiv.innerHTML = '<div class="empty-state"><p>Error loading recommendations. Is the server running?</p></div>';
+                console.error(err);
+            }
+        });
+
+        // Diagnostics form submit
+        document.getElementById('diagForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userId = document.getElementById('diagUserId').value || USER_ID;
+
+            try {
+                const response = await fetch(`${API_BASE}/recommendations/diagnostics?userId=${userId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('diagResults').style.display = 'block';
+
+                    // Top categories
+                    const categoriesDiv = document.getElementById('topCategories');
+                    if (data.data.topCategories.length > 0) {
+                        categoriesDiv.innerHTML = data.data.topCategories.map(c =>
+                            `<span class="category-badge">${c.category}<span>(${c.interactionCount})</span></span>`
+                        ).join('');
+                    } else {
+                        categoriesDiv.innerHTML = '<span class="tag">No data yet</span>';
+                    }
+
+                    // Top tags
+                    const tagsDiv = document.getElementById('topTags');
+                    if (data.data.topBoostedTags.length > 0) {
+                        tagsDiv.innerHTML = data.data.topBoostedTags.map(t =>
+                            `<span class="tag">${t}</span>`
+                        ).join('');
+                    } else {
+                        tagsDiv.innerHTML = '<span class="tag">No data yet</span>';
+                    }
+
+                    // Explanation
+                    document.getElementById('rankingExplanation').textContent = data.data.rankingExplanation;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        // Load initial products on page load
+        document.getElementById('searchForm').dispatchEvent(new Event('submit'));
+    </script>
+</body>
+
+</html>

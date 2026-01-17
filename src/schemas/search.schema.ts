@@ -1,11 +1,15 @@
 import { z } from 'zod';
 
 export const searchQuerySchema = z.object({
+    // Support both 'q' (spec) and 'searchTerm' (legacy) for backwards compatibility
+    q: z.string().optional(),
+    searchTerm: z.string().optional(),
     category: z.string().optional(),
     retailer: z.string().optional(),
+    brand: z.string().optional(),
     minPrice: z.string().transform(Number).pipe(z.number().min(0)).optional(),
     maxPrice: z.string().transform(Number).pipe(z.number().min(0)).optional(),
-    searchTerm: z.string().optional(),
+    sort: z.enum(['price_asc', 'price_desc', 'relevance']).optional().default('relevance'),
     limit: z
         .string()
         .transform(Number)
