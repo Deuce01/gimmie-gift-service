@@ -79,4 +79,4 @@ curl -X POST http://localhost:3000/api/recommendations \
 
 ## Next Steps
 
-See [walkthrough.md](file:///C:/Users/ELITEBOOK%20810/.gemini/antigravity/brain/f149d457-8fdc-486f-a8e8-b8ba1212f9cc/walkthrough.md) for complete testing scenarios and feature demonstrations.
+See [WALKTHROUGH.md](./WALKTHROUGH.md) for complete architecture explanation, tradeoffs analysis, and feature demonstrations.
